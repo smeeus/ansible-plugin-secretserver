@@ -53,7 +53,7 @@ lookup('secretserver', '<secret_name>.<type>')
 License Information
 -------------------
 
-This plugin was created by [Sven meeus](https://framed.be/)
+This plugin was created by [Sven Meeus](https://framed.be/)
 
 The MIT License (MIT)
 
