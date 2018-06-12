@@ -213,10 +213,33 @@ class LookupModule(LookupBase):
 
         # Get item and type from passed terms
         for term in terms:
+
             display.debug("File lookup term: %s" % term)
 
-            searchtext = term.split(".")[0]
-            searchtype = term.split(".")[1]
+            if isinstance(term, (dict)):
+                try:
+                    searchtext = term["name"]
+                except KeyError:
+                    raise AnsibleError("Search term dict requires name key to be present")
+                try:
+                    searchtype = term["secret_type"]
+                except KeyError:
+                    searchtype = ""
+                # # get searchtext
+                # if term.has_key("name"):
+                #     searchname = term["name"]
+                # else:
+                #     raise AnsibleError("Search term dict requires name key to be present")
+                # # get searchtype
+                # if term.has_key("secret_type"):
+                #     searchtype = term["secret_type"]
+            else:
+                try:
+                    searchtext, searchtype = term.split(".")
+                except ValueError:
+                    searchtext = term
+                    searchtype = ""
+
             display.debug("searchtext: %s" % searchtext)
             display.debug("searchtype: %s" % searchtype)
 
@@ -234,7 +257,7 @@ class LookupModule(LookupBase):
                 ### Check search type
                 if searchtype == "id":
                     ret.append(searchid)
-                else:
+                elif searchtype != "":
                     for item in secretitems:
                         display.debug(item)
                         if searchtype == "password":
@@ -246,11 +269,24 @@ class LookupModule(LookupBase):
                         elif searchtype == "notes":
                             if item["fieldName"] == "Notes":
                                 ret.append(item["itemValue"])
-                        else:
-                            raise AnsibleError("Unknow request type '%s'. Use 'password', 'username', 'id' or 'notes'" % searchtype)
+                else:
+                    # raise AnsibleError("Unknow request type '%s'. Use 'password', 'username', 'id' or 'notes'" % searchtype)
+                    (_tmpid, _tmpusername, _tmppassword, _tmpnotes) = (searchid, "", "", "")
+                    for item in secretitems:
+                        display.debug(item)
+                        if item["fieldName"] == "Password":
+                            _tmppassword = item["itemValue"]
+                        elif item["fieldName"] == "Username":
+                            _tmpusername = item["itemValue"]
+                        elif item["fieldName"] == "Notes":
+                            _tmpnotes = item["itemValue"]
+                    _tmp = { "id": _tmpid, "username": _tmpusername,
+                                "password": _tmppassword, "notes": _tmpnotes }
+                    ret.append(_tmp)
 
-                # Uncomment if you always want to get a single item
+                # Comment if you want to get a multiple items
                 # break
 
         # Return final data array
+        # return self._flatten(ret)
         return ret
