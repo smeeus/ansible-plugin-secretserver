@@ -215,6 +215,7 @@ class LookupModule(LookupBase):
         for term in terms:
 
             display.debug("File lookup term: %s" % term)
+            print("File lookup term: %s" % term)
 
             if isinstance(term, (dict)):
                 try:
@@ -242,6 +243,9 @@ class LookupModule(LookupBase):
 
             display.debug("searchtext: %s" % searchtext)
             display.debug("searchtype: %s" % searchtype)
+
+            print("searchtext: %s" % searchtext)
+            print("searchtype: %s" % searchtype)
 
             ### Search for secrets
             records = search_secrets(ssbaseurl, searchtext, headers)
