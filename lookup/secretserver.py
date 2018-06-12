@@ -55,6 +55,72 @@ except ImportError:
 
 __metaclass__ = type
 
+# Reuse code from ARA project config.py
+from ansible import __version__ as ansible_version
+from ansible.constants import get_config
+try:
+    from ansible.constants import load_config_file
+except ImportError:
+    # Ansible 2.4 no longer provides load_config_file, this is handled further
+    # down
+    from ansible.config.manager import find_ini_config_file
+    # Also, don't scream deprecated things at us
+    import ansible.constants
+    ansible.constants._deprecated = lambda *args: None
+from distutils.version import LooseVersion
+from six.moves import configparser
+
+def _secretserver_config(config, key, env_var, default=None, section='secretserver', value_type=None):
+    """
+    Wrapper around Ansible's get_config backward/forward compatibility
+    """
+    if default is None:
+        try:
+            # We're using env_var as keys in the DEFAULTS dict
+            default = DEFAULTS.get(env_var)
+        except KeyError as e:
+            msg = 'There is no default value for {0}: {1}'.format(key, str(e))
+            raise KeyError(msg)
+
+    # >= 2.3.0.0 (NOTE: Ansible trunk versioning scheme has 3 digits, not 4)
+    if LooseVersion(ansible_version) >= LooseVersion('2.3.0'):
+        return get_config(config, section, key, env_var, default,
+                          value_type=value_type)
+
+    # < 2.3.0.0 compatibility
+    if value_type is None:
+        return get_config(config, section, key, env_var, default)
+
+    args = {
+        'boolean': dict(boolean=True),
+        'integer': dict(integer=True),
+        'list': dict(islist=True),
+        'tmppath': dict(istmppath=True)
+    }
+    return get_config(config, section, key, env_var, default,
+                      **args[value_type])
+
+DEFAULTS = {
+    'SECRETSERVER_HOST': os.environ["SECRETSERVER_HOST"],
+    'SECRETSERVER_USERNAME': os.environ["SECRETSERVER_USERNAME"],
+    'SECRETSERVER_PASSWORD': os.environ["SECRETSERVER_PASSWORD"]
+}
+
+# Bootstrap Ansible configuration
+# Ansible >=2.4 takes care of loading the configuration file itself
+if LooseVersion(ansible_version) < LooseVersion('2.4.0'):
+    config, path = load_config_file()
+else:
+    path = find_ini_config_file()
+    config = configparser.ConfigParser()
+    if path is not None:
+        config.read(path)
+
+SECRETSERVER_HOST = _secretserver_config(config, 'host', 'SECRETSERVER_HOST', default=DEFAULTS['SECRETSERVER_HOST'])
+SECRETSERVER_USERNAME = _secretserver_config(config, 'username', 'SECRETSERVER_USERNAME', default=DEFAULTS['SECRETSERVER_USERNAME'])
+SECRETSERVER_PASSWORD = _secretserver_config(config, 'password', 'SECRETSERVER_PASSWORD', default=DEFAULTS['SECRETSERVER_PASSWORD'])
+
+
 def _rest_url(baseurl, path, usebase=True):
     # print urljoin(_ssbaseurl, ("/api/v1" if usebase == True else "") + path)
     return urljoin(baseurl, ("/api/v1" if usebase == True else "") + path)
@@ -119,9 +185,9 @@ def get_secret(baseurl, secretid=0, headers={}):
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):
         # Get credentials from environment variables
-        sshost=os.environ["SECRETSERVER_HOST"]
-        ssuser=os.environ["SECRETSERVER_USERNAME"]
-        sspass=os.environ["SECRETSERVER_PASSWORD"]
+        sshost=SECRETSERVER_HOST
+        ssuser=SECRETSERVER_USERNAME
+        sspass=SECRETSERVER_PASSWORD
 
         # Define base url
         ssbaseurl = "https://%s" % sshost
