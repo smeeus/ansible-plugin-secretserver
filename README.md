@@ -26,12 +26,36 @@ Python libraries:
 - json
 - requests
 
+Configuration
+-------------
+Configuration can be set as environment variables or in ansible.cfg
+
+**Environment variables**
+```
+SECRETSERVER_HOST=secretserver.example.com
+SECRETSERVER_USERNAME=ansible
+SECRETSERVER_PASSWORD=password
+```
+
+**Ansible configuration file**
+```
+...
+
+[secretserver]
+host = secretserver.example.com
+username = ansible
+password = password
+
+```
+
+
 Usage
 -----
 
 The syntax for looking up specific secret information is
 
 ```
+lookup('secretserver', '<secret_name>')
 lookup('secretserver', '<secret_name>.<type>')
 ```
 
@@ -44,6 +68,7 @@ lookup('secretserver', '<secret_name>.<type>')
       - my_first_secret_name
       - my_second_secret_name
   tasks:
+    - debug: msg="secret:   {{ lookup('secretserver', 'my_secret_name') }}"
     - debug: msg="id:       {{ lookup('secretserver', 'my_secret_name.id') }}"
     - debug: msg="username: {{ lookup('secretserver', 'my_secret_name.username') }}"
     - debug: msg="password: {{ lookup('secretserver', 'my_secret_name.password') }}"
