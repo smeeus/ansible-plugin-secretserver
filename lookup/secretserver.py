@@ -101,9 +101,9 @@ def _secretserver_config(config, key, env_var, default=None, section='secretserv
                       **args[value_type])
 
 DEFAULTS = {
-    'SECRETSERVER_HOST': os.environ["SECRETSERVER_HOST"],
-    'SECRETSERVER_USERNAME': os.environ["SECRETSERVER_USERNAME"],
-    'SECRETSERVER_PASSWORD': os.environ["SECRETSERVER_PASSWORD"]
+    'SECRETSERVER_HOST': os.environ.get("SECRETSERVER_HOST", ""),
+    'SECRETSERVER_USERNAME': os.environ.get("SECRETSERVER_USERNAME", ""),
+    'SECRETSERVER_PASSWORD': os.environ.get("SECRETSERVER_PASSWORD", "")
 }
 
 # Bootstrap Ansible configuration
@@ -143,7 +143,7 @@ def rest_get_secret(baseurl, secretid=0, headers={}):
 def get_token(baseurl, user, pwd):
     resp = rest_get_token(baseurl, user, pwd)
     if resp.status_code != 200:
-        raise AnsibleError("Cannot get token: %s - %s" % (resp.status_code, resp.text))
+        raise AnsibleError("Cannot get token for user %s from %s: %s - %s" % (user, baseurl, resp.status_code, resp.text))
     display.debug("Get token success: %s - %s" % (resp.status_code, resp.text))
     display.debug("Response JSON: {}" % resp.json())
     token = resp.json()["access_token"]
