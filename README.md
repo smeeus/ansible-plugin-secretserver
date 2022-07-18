@@ -1,3 +1,5 @@
+> **NOTE: This repository is archived and will no longer be worked on.**
+
 Thycotic Secret Server Ansible lookup plugin
 ============================================
 
